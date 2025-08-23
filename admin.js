@@ -1,0 +1,647 @@
+// Sistema de Administração para Agendamentos
+class AdminSystem {
+    constructor() {
+        this.appointments = [];
+        this.admins = [];
+        this.currentUser = localStorage.getItem('currentUser') || 'admin';
+        this.timeSlots = [
+            '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
+            '11:00', '11:30', '14:00', '14:30', '15:00', '15:30',
+            '16:00', '16:30', '17:00', '17:30'
+        ];
+        this.currentFilters = {
+            date: '',
+            service: '',
+            search: ''
+        };
+        this.init();
+    }
+
+    init() {
+        this.loadAppointments();
+        this.loadAdmins();
+        this.setupEventListeners();
+        this.populateTimeSelects();
+        this.updateStats();
+        this.setMinDate();
+        // Aplicar filtro padrão de agendamentos pendentes
+        this.setQuickFilter('pending');
+        
+        // Renderizar lista de administradores se o modal estiver visível
+        if (document.getElementById('adminsModal') && 
+            document.getElementById('adminsModal').style.display === 'block') {
+            this.renderAdminsList();
+        }
+    }
+
+    setupEventListeners() {
+        // Filtros rápidos
+        document.getElementById('filterPending').addEventListener('click', () => {
+            this.setQuickFilter('pending');
+        });
+
+        document.getElementById('filterToday').addEventListener('click', () => {
+            this.setQuickFilter('today');
+        });
+
+        document.getElementById('filterWeek').addEventListener('click', () => {
+            this.setQuickFilter('week');
+        });
+
+        document.getElementById('filterAll').addEventListener('click', () => {
+            this.setQuickFilter('all');
+        });
+
+        // Filtros
+        document.getElementById('filterDate').addEventListener('change', (e) => {
+            this.currentFilters.date = e.target.value;
+            this.applyFilters();
+        });
+
+        document.getElementById('filterService').addEventListener('change', (e) => {
+            this.currentFilters.service = e.target.value;
+            this.applyFilters();
+        });
+
+        document.getElementById('searchTerm').addEventListener('input', (e) => {
+            this.currentFilters.search = e.target.value;
+            this.applyFilters();
+        });
+
+        document.getElementById('clearFilters').addEventListener('click', () => {
+            this.clearFilters();
+        });
+
+        // Exportação
+        document.getElementById('exportCSV').addEventListener('click', () => {
+            this.exportToCSV();
+        });
+
+        document.getElementById('exportPDF').addEventListener('click', () => {
+            this.exportToPDF();
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            this.logout();
+        });
+
+        // Gerenciamento de administradores
+        document.getElementById('manageAdminsBtn').addEventListener('click', () => {
+            this.openAdminsModal();
+        });
+
+        document.getElementById('addAdminBtn').addEventListener('click', () => {
+            this.handleAddAdmin();
+        });
+
+        // Modal
+        const closeButtons = document.querySelectorAll('.close');
+        closeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                this.closeEditModal();
+                this.closeDeleteModal();
+                this.closeAdminsModal();
+            });
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                this.closeEditModal();
+                this.closeDeleteModal();
+                this.closeAdminsModal();
+            }
+        });
+
+        // Formulário de edição
+        document.getElementById('editForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.updateAppointment();
+        });
+
+        // Seleção de data no formulário de edição
+        document.getElementById('editDate').addEventListener('change', (e) => {
+            this.updateAvailableTimesForEdit(e.target.value);
+        });
+    }
+
+    setMinDate() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('filterDate').min = today;
+        document.getElementById('editDate').min = today;
+    }
+
+    populateTimeSelects() {
+        const editTimeSelect = document.getElementById('editTime');
+        
+        this.timeSlots.forEach(time => {
+            const option = document.createElement('option');
+            option.value = time;
+            option.textContent = time;
+            editTimeSelect.appendChild(option);
+        });
+    }
+
+    loadAppointments() {
+        this.appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+    }
+
+    loadAdmins() {
+        this.admins = JSON.parse(localStorage.getItem('admins')) || [{ username: 'admin', password: 'admin123' }];
+    }
+
+    saveAdmins() {
+        localStorage.setItem('admins', JSON.stringify(this.admins));
+    }
+
+    addAdmin(username, password) {
+        // Verificar se o usuário já existe
+        if (this.admins.some(admin => admin.username === username)) {
+            this.showNotification('Erro: Usuário já existe!', 'error');
+            return false;
+        }
+
+        this.admins.push({ username, password });
+        this.saveAdmins();
+        this.renderAdminsList();
+        this.showNotification('Administrador adicionado com sucesso!', 'success');
+        return true;
+    }
+
+    removeAdmin(username) {
+        // Não permitir remover o próprio usuário
+        if (username === this.currentUser) {
+            this.showNotification('Você não pode remover seu próprio usuário!', 'error');
+            return;
+        }
+
+        // Não permitir remover o último administrador
+        if (this.admins.length <= 1) {
+            this.showNotification('Não é possível remover o último administrador!', 'error');
+            return;
+        }
+
+        this.admins = this.admins.filter(admin => admin.username !== username);
+        this.saveAdmins();
+        this.renderAdminsList();
+        this.showNotification('Administrador removido com sucesso!', 'success');
+    }
+
+    renderAdminsList() {
+        const adminsList = document.getElementById('adminsList');
+        if (!adminsList) return;
+
+        adminsList.innerHTML = this.admins.map(admin => `
+            <div class="admin-item">
+                <span class="admin-username">${admin.username} ${admin.username === this.currentUser ? '<span class="current-user">(Você)</span>' : ''}</span>
+                ${this.admins.length > 1 && admin.username !== this.currentUser ? 
+                    `<button class="btn-remove-admin" onclick="adminSystem.removeAdmin('${admin.username}')">
+                        <i class="fas fa-trash"></i> Remover
+                    </button>` : ''}
+            </div>
+        `).join('');
+    }
+
+    applyFilters() {
+        let filteredAppointments = [...this.appointments];
+
+        // Filtro por data
+        if (this.currentFilters.date) {
+            filteredAppointments = filteredAppointments.filter(app => 
+                app.date === this.currentFilters.date
+            );
+        }
+
+        // Filtro por serviço
+        if (this.currentFilters.service) {
+            filteredAppointments = filteredAppointments.filter(app => 
+                app.service === this.currentFilters.service
+            );
+        }
+
+        // Filtro por busca
+        if (this.currentFilters.search) {
+            const searchTerm = this.currentFilters.search.toLowerCase();
+            filteredAppointments = filteredAppointments.filter(app => 
+                app.name.toLowerCase().includes(searchTerm) ||
+                app.email.toLowerCase().includes(searchTerm) ||
+                app.phone.includes(searchTerm)
+            );
+        }
+
+        // Se algum filtro manual foi aplicado, remover classe active dos filtros rápidos
+        if (this.currentFilters.date || this.currentFilters.service || this.currentFilters.search) {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+        }
+
+        this.renderAppointments(filteredAppointments);
+    }
+
+    setQuickFilter(filterType) {
+        // Remover classe active de todos os botões
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Adicionar classe active ao botão clicado
+        document.getElementById(`filter${filterType.charAt(0).toUpperCase() + filterType.slice(1)}`).classList.add('active');
+        
+        // Aplicar filtro baseado no tipo
+        let filteredAppointments = [...this.appointments];
+        const today = new Date().toISOString().split('T')[0];
+        
+        switch(filterType) {
+            case 'pending':
+                // Agendamentos futuros (incluindo hoje)
+                filteredAppointments = filteredAppointments.filter(app => app.date >= today);
+                break;
+            case 'today':
+                // Apenas agendamentos de hoje
+                filteredAppointments = filteredAppointments.filter(app => app.date === today);
+                break;
+            case 'week':
+                // Agendamentos desta semana
+                const weekFromNow = new Date();
+                weekFromNow.setDate(weekFromNow.getDate() + 7);
+                const weekEnd = weekFromNow.toISOString().split('T')[0];
+                filteredAppointments = filteredAppointments.filter(app => 
+                    app.date >= today && app.date <= weekEnd
+                );
+                break;
+            case 'all':
+                // Todos os agendamentos
+                filteredAppointments = [...this.appointments];
+                break;
+        }
+        
+        // Limpar filtros manuais
+        this.currentFilters = { date: '', service: '', search: '' };
+        document.getElementById('filterDate').value = '';
+        document.getElementById('filterService').value = '';
+        document.getElementById('searchTerm').value = '';
+        
+        // Renderizar agendamentos filtrados
+        this.renderAppointments(filteredAppointments);
+    }
+
+    clearFilters() {
+        this.currentFilters = { date: '', service: '', search: '' };
+        document.getElementById('filterDate').value = '';
+        document.getElementById('filterService').value = '';
+        document.getElementById('searchTerm').value = '';
+        
+        // Resetar filtro rápido para "Pendentes"
+        this.setQuickFilter('pending');
+    }
+
+    updateStats() {
+        const total = this.appointments.length;
+        const today = new Date().toISOString().split('T')[0];
+        const todayCount = this.appointments.filter(app => app.date === today).length;
+        const upcomingCount = this.appointments.filter(app => app.date > today).length;
+
+        document.getElementById('totalAppointments').textContent = total;
+        document.getElementById('todayAppointments').textContent = todayCount;
+        document.getElementById('upcomingAppointments').textContent = upcomingCount;
+    }
+
+    renderAppointments(appointmentsToRender = null) {
+        const appointmentsList = document.getElementById('appointmentsList');
+        const appointments = appointmentsToRender || this.appointments;
+        
+        if (appointments.length === 0) {
+            appointmentsList.innerHTML = '<p class="no-appointments">Nenhum agendamento encontrado.</p>';
+            return;
+        }
+
+        // Ordenar por data e hora
+        const sortedAppointments = appointments.sort((a, b) => {
+            const dateA = new Date(a.date + 'T' + a.time);
+            const dateB = new Date(b.date + 'T' + b.time);
+            return dateA - dateB;
+        });
+
+        appointmentsList.innerHTML = sortedAppointments.map(appointment => `
+            <div class="appointment-item">
+                <div class="appointment-header">
+                    <div class="appointment-info">
+                        <span class="appointment-name">${appointment.name}</span>
+                        <span class="appointment-service">${this.getServiceLabel(appointment.service)}</span>
+                    </div>
+                    <div class="appointment-time-info">
+                        <span class="appointment-date">${this.formatDate(appointment.date)}</span>
+                        <span class="appointment-time">${appointment.time}</span>
+                    </div>
+                </div>
+                <div class="appointment-details">
+                    <div class="contact-info">
+                        <p><i class="fas fa-envelope"></i> ${appointment.email}</p>
+                        <p><i class="fas fa-phone"></i> ${appointment.phone}</p>
+                    </div>
+                    ${appointment.notes ? `<p class="notes"><i class="fas fa-sticky-note"></i> <strong>Observações:</strong> ${appointment.notes}</p>` : ''}
+                    <p class="created-at"><i class="fas fa-calendar-plus"></i> <strong>Criado em:</strong> ${this.formatDateTime(appointment.createdAt)}</p>
+                </div>
+                <div class="appointment-actions">
+                    <button class="btn-edit" onclick="adminSystem.editAppointment('${appointment.id}')">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                    <button class="btn-delete" onclick="adminSystem.showDeleteModal('${appointment.id}')">
+                        <i class="fas fa-trash"></i> Excluir
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    editAppointment(id) {
+        const appointment = this.appointments.find(app => app.id === id);
+        if (appointment) {
+            document.getElementById('editId').value = appointment.id;
+            document.getElementById('editName').value = appointment.name;
+            document.getElementById('editEmail').value = appointment.email;
+            document.getElementById('editPhone').value = appointment.phone;
+            document.getElementById('editDate').value = appointment.date;
+            document.getElementById('editTime').value = appointment.time;
+            document.getElementById('editService').value = appointment.service;
+            document.getElementById('editNotes').value = appointment.notes || '';
+            
+            this.updateAvailableTimesForEdit(appointment.date);
+            document.getElementById('editModal').style.display = 'block';
+        }
+    }
+
+    closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+    }
+
+    showDeleteModal(id) {
+        const appointment = this.appointments.find(app => app.id === id);
+        if (appointment) {
+            document.getElementById('deleteDetails').textContent = 
+                `${appointment.name} - ${this.formatDate(appointment.date)} às ${appointment.time} (${this.getServiceLabel(appointment.service)})`;
+            
+            document.getElementById('confirmDelete').onclick = () => {
+                this.deleteAppointment(id);
+            };
+            
+            document.getElementById('deleteModal').style.display = 'block';
+        }
+    }
+
+    closeDeleteModal() {
+        document.getElementById('deleteModal').style.display = 'none';
+    }
+
+    openAdminsModal() {
+        document.getElementById('adminsModal').style.display = 'block';
+        this.renderAdminsList();
+        
+        // Limpar campos do formulário
+        document.getElementById('newAdminUsername').value = '';
+        document.getElementById('newAdminPassword').value = '';
+        document.getElementById('confirmAdminPassword').value = '';
+    }
+
+    closeAdminsModal() {
+        document.getElementById('adminsModal').style.display = 'none';
+    }
+
+    handleAddAdmin() {
+        const username = document.getElementById('newAdminUsername').value.trim();
+        const password = document.getElementById('newAdminPassword').value;
+        const confirmPassword = document.getElementById('confirmAdminPassword').value;
+
+        if (!username || !password) {
+            this.showNotification('Por favor, preencha todos os campos!', 'error');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            this.showNotification('As senhas não coincidem!', 'error');
+            return;
+        }
+
+        this.addAdmin(username, password);
+        
+        // Limpar campos após adicionar
+        document.getElementById('newAdminUsername').value = '';
+        document.getElementById('newAdminPassword').value = '';
+        document.getElementById('confirmAdminPassword').value = '';
+    }
+
+    updateAppointment() {
+        const formData = new FormData(document.getElementById('editForm'));
+        const appointmentId = document.getElementById('editId').value;
+        
+        const updatedAppointment = {
+            id: appointmentId,
+            name: formData.get('editName'),
+            email: formData.get('editEmail'),
+            phone: formData.get('editPhone'),
+            date: formData.get('editDate'),
+            time: formData.get('editTime'),
+            service: formData.get('editService'),
+            notes: formData.get('editNotes'),
+            createdAt: this.appointments.find(app => app.id === appointmentId)?.createdAt || new Date().toISOString()
+        };
+
+        // Verificar se o horário já está ocupado por outro agendamento
+        const conflictingAppointment = this.appointments.find(app => 
+            app.id !== appointmentId && 
+            app.date === updatedAppointment.date && 
+            app.time === updatedAppointment.time
+        );
+
+        if (conflictingAppointment) {
+            this.showNotification('Este horário já está ocupado por outro agendamento.', 'error');
+            return;
+        }
+
+        const index = this.appointments.findIndex(app => app.id === appointmentId);
+        if (index !== -1) {
+            this.appointments[index] = updatedAppointment;
+            this.saveAppointments();
+            this.renderAppointments();
+            this.updateStats();
+            this.closeEditModal();
+            this.showNotification('Agendamento atualizado com sucesso!', 'success');
+        }
+    }
+
+    deleteAppointment(id) {
+        this.appointments = this.appointments.filter(app => app.id !== id);
+        this.saveAppointments();
+        this.renderAppointments();
+        this.updateStats();
+        this.closeDeleteModal();
+        this.showNotification('Agendamento excluído com sucesso!', 'success');
+    }
+
+    updateAvailableTimesForEdit(selectedDate) {
+        const editTimeSelect = document.getElementById('editTime');
+        const currentAppointmentId = document.getElementById('editId').value;
+        
+        // Limpar opções existentes
+        editTimeSelect.innerHTML = '<option value="">Selecione um horário</option>';
+        
+        this.timeSlots.forEach(time => {
+            const isBooked = this.appointments.some(app => 
+                app.date === selectedDate && 
+                app.time === time && 
+                app.id !== currentAppointmentId
+            );
+            
+            const option = document.createElement('option');
+            option.value = time;
+            option.textContent = time;
+            if (isBooked) {
+                option.textContent += ' (Ocupado)';
+                option.disabled = true;
+            }
+            editTimeSelect.appendChild(option);
+        });
+    }
+
+    saveAppointments() {
+        localStorage.setItem('appointments', JSON.stringify(this.appointments));
+    }
+
+    exportToCSV() {
+        const headers = ['Nome', 'Email', 'Telefone', 'Data', 'Horário', 'Serviço', 'Observações', 'Data de Criação'];
+        const csvContent = [
+            headers.join(','),
+            ...this.appointments.map(app => [
+                `"${app.name}"`,
+                `"${app.email}"`,
+                `"${app.phone}"`,
+                app.date,
+                app.time,
+                `"${this.getServiceLabel(app.service)}"`,
+                `"${app.notes || ''}"`,
+                app.createdAt
+            ].join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `agendamentos_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        
+        this.showNotification('Arquivo CSV exportado com sucesso!', 'success');
+    }
+
+    exportToPDF() {
+        // Implementação básica de PDF usando jsPDF (seria necessário incluir a biblioteca)
+        this.showNotification('Funcionalidade de PDF em desenvolvimento. Use a exportação CSV por enquanto.', 'info');
+    }
+
+    logout() {
+        if (confirm('Tem certeza que deseja sair?')) {
+            // Remover status de autenticação
+            localStorage.removeItem('adminAuthenticated');
+            // Redirecionar para a página de login
+            window.location.href = 'login.html';
+        }
+    }
+
+    formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('pt-BR');
+    }
+
+    formatDateTime(dateTimeString) {
+        const date = new Date(dateTimeString);
+        return date.toLocaleString('pt-BR');
+    }
+
+    getServiceLabel(service) {
+        const serviceLabels = {
+            'consulta': 'Consulta',
+            'exame': 'Exame',
+            'procedimento': 'Procedimento',
+            'outro': 'Outro'
+        };
+        return serviceLabels[service] || service;
+    }
+
+    showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <span>${message}</span>
+            <button onclick="this.parentElement.remove()">&times;</button>
+        `;
+        
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease;
+        `;
+        
+        const colors = {
+            success: '#48bb78',
+            error: '#f56565',
+            warning: '#ed8936',
+            info: '#4299e1'
+        };
+        
+        notification.style.background = colors[type] || colors.info;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+}
+
+// Adicionar estilos CSS para notificações
+const notificationStyles = document.createElement('style');
+notificationStyles.textContent = `
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    .notification button {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 18px;
+        cursor: pointer;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .no-appointments {
+        text-align: center;
+        color: #718096;
+        font-style: italic;
+        padding: 20px;
+    }
+`;
+document.head.appendChild(notificationStyles);
+
+// Inicializar o sistema administrativo
+const adminSystem = new AdminSystem();

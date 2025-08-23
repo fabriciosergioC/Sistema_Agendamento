@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administração - Sistema de Agendamento</title>
+    <link rel="stylesheet" href="admin-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        #authRedirect {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+        
+        #authRedirect div {
+            background: #1e3c72;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 400px;
+            margin: 20px;
+        }
+        
+        #authRedirect a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 15px;
+        }
+        
+        #authRedirect a:hover {
+            text-decoration: underline;
+        }
+        
+        .admin-list-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .admin-list-section h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .admins-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px;
+        }
+        
+        .admin-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #f1f1f1;
+        }
+        
+        .admin-item:last-child {
+            border-bottom: none;
+        }
+        
+        .admin-username {
+            font-weight: 500;
+            color: #2d3748;
+        }
+        
+        .btn-remove-admin {
+            background: #f56565;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .btn-remove-admin:hover {
+            background: #e53e3e;
+        }
+        
+        .current-user {
+            font-size: 12px;
+            color: #48bb78;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-shield-alt"></i> Painel Administrativo</h1>
+            <nav>
+                <a href="index.html" class="nav-link">
+                    <i class="fas fa-home"></i> Voltar ao Site
+                </a>
+                <button id="manageAdminsBtn" class="nav-link">
+                    <i class="fas fa-users-cog"></i> Gerenciar Administradores
+                </button>
+                <button id="logoutBtn" class="nav-link logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </button>
+            </nav>
+        </header>
+
+        <main>
+            <div class="admin-dashboard">
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalAppointments">0</h3>
+                            <p>Total de Agendamentos</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="todayAppointments">0</h3>
+                            <p>Agendamentos Hoje</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="upcomingAppointments">0</h3>
+                            <p>Próximos Agendamentos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filters-section">
+                    <div class="quick-filters">
+                        <button id="filterPending" class="filter-btn active">
+                            <i class="fas fa-clock"></i> Pendentes
+                        </button>
+                        <button id="filterToday" class="filter-btn">
+                            <i class="fas fa-calendar-day"></i> Hoje
+                        </button>
+                        <button id="filterWeek" class="filter-btn">
+                            <i class="fas fa-calendar-week"></i> Esta Semana
+                        </button>
+                        <button id="filterAll" class="filter-btn">
+                            <i class="fas fa-list"></i> Todos
+                        </button>
+                    </div>
+                    
+                    <div class="filters">
+                        <div class="filter-group">
+                            <label for="filterDate">Filtrar por Data:</label>
+                            <input type="date" id="filterDate">
+                        </div>
+                        <div class="filter-group">
+                            <label for="filterService">Filtrar por Serviço:</label>
+                            <select id="filterService">
+                                <option value="">Todos os Serviços</option>
+                                <option value="consulta">Consulta</option>
+                                <option value="exame">Exame</option>
+                                <option value="procedimento">Procedimento</option>
+                                <option value="outro">Outro</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="searchTerm">Buscar:</label>
+                            <input type="text" id="searchTerm" placeholder="Nome, email ou telefone">
+                        </div>
+                        <button id="clearFilters" class="btn-secondary">
+                            <i class="fas fa-times"></i> Limpar Filtros
+                        </button>
+                    </div>
+                </div>
+
+                <div class="appointments-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-list"></i> Lista de Agendamentos</h2>
+                        <div class="export-actions">
+                            <button id="exportCSV" class="btn-export">
+                                <i class="fas fa-download"></i> Exportar CSV
+                            </button>
+                            <button id="exportPDF" class="btn-export">
+                                <i class="fas fa-file-pdf"></i> Exportar PDF
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="appointmentsList" class="appointments-list">
+                        <!-- Agendamentos serão inseridos aqui dinamicamente -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal para editar agendamento -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2><i class="fas fa-edit"></i> Editar Agendamento</h2>
+            <form id="editForm">
+                <input type="hidden" id="editId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editName">Nome:</label>
+                        <input type="text" id="editName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editEmail">Email:</label>
+                        <input type="email" id="editEmail" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editPhone">Telefone:</label>
+                        <input type="tel" id="editPhone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editService">Serviço:</label>
+                        <select id="editService" required>
+                            <option value="consulta">Consulta</option>
+                            <option value="exame">Exame</option>
+                            <option value="procedimento">Procedimento</option>
+                            <option value="outro">Outro</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editDate">Data:</label>
+                        <input type="date" id="editDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editTime">Horário:</label>
+                        <select id="editTime" required>
+                            <option value="">Selecione um horário</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editNotes">Observações:</label>
+                    <textarea id="editNotes" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save"></i> Salvar Alterações
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="adminSystem.closeEditModal()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de confirmação para exclusão -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content delete-modal">
+            <h2><i class="fas fa-exclamation-triangle"></i> Confirmar Exclusão</h2>
+            <p>Tem certeza que deseja excluir este agendamento?</p>
+            <p class="delete-details" id="deleteDetails"></p>
+            <div class="form-actions">
+                <button id="confirmDelete" class="btn-danger">
+                    <i class="fas fa-trash"></i> Sim, Excluir
+                </button>
+                <button onclick="adminSystem.closeDeleteModal()" class="btn-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para gerenciamento de administradores -->
+    <div id="adminsModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2><i class="fas fa-users-cog"></i> Gerenciar Administradores</h2>
+            <div class="admin-management">
+                <div class="form-group">
+                    <label for="newAdminUsername">Novo Administrador:</label>
+                    <input type="text" id="newAdminUsername" placeholder="Nome de usuário">
+                </div>
+                <div class="form-group">
+                    <label for="newAdminPassword">Senha:</label>
+                    <input type="password" id="newAdminPassword" placeholder="Senha">
+                </div>
+                <div class="form-group">
+                    <label for="confirmAdminPassword">Confirmar Senha:</label>
+                    <input type="password" id="confirmAdminPassword" placeholder="Confirmar senha">
+                </div>
+                <div class="form-actions">
+                    <button id="addAdminBtn" class="btn-primary">
+                        <i class="fas fa-user-plus"></i> Adicionar Administrador
+                    </button>
+                    <button onclick="adminSystem.closeAdminsModal()" class="btn-secondary">
+                        <i class="fas fa-times"></i> Fechar
+                    </button>
+                </div>
+                
+                <div class="admin-list-section">
+                    <h3><i class="fas fa-list"></i> Administradores Cadastrados</h3>
+                    <div id="adminsList" class="admins-list">
+                        <!-- Lista de administradores será carregada aqui -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+    
+    <!-- Verificação de autenticação -->
+    <div id="authRedirect">
+        <div>
+            <h2><i class="fas fa-exclamation-triangle"></i> Acesso Restrito</h2>
+            <p>Você precisa fazer login para acessar a área administrativa.</p>
+            <a href="login.html">Ir para a página de login</a>
+        </div>
+    </div>
+    
+    <script>
+        // Verificar autenticação ao carregar a página
+        document.addEventListener('DOMContentLoaded', function() {
+            if (localStorage.getItem('adminAuthenticated') !== 'true') {
+                // Ocultar conteúdo principal e mostrar mensagem de redirecionamento
+                document.querySelector('.container').style.display = 'none';
+                document.getElementById('authRedirect').style.display = 'flex';
+                
+                // Redirecionar automaticamente após 3 segundos
+                setTimeout(function() {
+                    window.location.href = 'login.html';
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>

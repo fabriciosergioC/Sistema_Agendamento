@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema de Agendamento</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+        
+        .login-header {
+            margin-bottom: 30px;
+        }
+        
+        .login-header h1 {
+            color: #1e3c72;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .login-header p {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 32px;
+            color: white;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn-login, .btn-register {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn-login:hover, .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(30, 60, 114, 0.3);
+        }
+        
+        .btn-register {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+        }
+        
+        .error-message {
+            color: #f56565;
+            background: #fed7d7;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .back-link {
+            display: block;
+            margin-top: 25px;
+            color: #2a5298;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .back-link:hover {
+            color: #1e3c72;
+            text-decoration: underline;
+        }
+        
+        .form-switch {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .form-switch p {
+            color: #4a5568;
+            margin-bottom: 15px;
+        }
+        
+        .btn-switch {
+            background: #718096;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-switch:hover {
+            background: #4a5568;
+        }
+        
+        .register-form {
+            display: none;
+        }
+        
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+            
+            .login-header h1 {
+                font-size: 1.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo">
+                <i class="fas fa-lock"></i>
+            </div>
+            <h1>Acesso Restrito</h1>
+            <p>Área Administrativa</p>
+        </div>
+        
+        <!-- Formulário de Login -->
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Usuário</label>
+                <input type="text" id="username" name="username" required placeholder="Digite seu usuário">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Senha</label>
+                <input type="password" id="password" name="password" required placeholder="Digite sua senha">
+            </div>
+            
+            <div id="errorMessage" class="error-message">
+                Usuário ou senha incorretos. Tente novamente.
+            </div>
+            
+            <button type="submit" class="btn-login">
+                <i class="fas fa-sign-in-alt"></i> Entrar
+            </button>
+            
+            <div class="form-switch">
+                <p>Não tem uma conta?</p>
+                <button type="button" class="btn-switch" onclick="showRegisterForm()">
+                    <i class="fas fa-user-plus"></i> Criar Conta de Administrador
+                </button>
+            </div>
+        </form>
+        
+        <!-- Formulário de Registro -->
+        <form id="registerForm" class="register-form">
+            <div class="form-group">
+                <label for="registerUsername">Novo Usuário</label>
+                <input type="text" id="registerUsername" name="registerUsername" required placeholder="Escolha um nome de usuário">
+            </div>
+            
+            <div class="form-group">
+                <label for="registerPassword">Nova Senha</label>
+                <input type="password" id="registerPassword" name="registerPassword" required placeholder="Escolha uma senha">
+            </div>
+            
+            <div class="form-group">
+                <label for="confirmPassword">Confirmar Senha</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="Confirme sua senha">
+            </div>
+            
+            <div id="registerErrorMessage" class="error-message">
+                Erro ao criar conta. Tente novamente.
+            </div>
+            
+            <button type="submit" class="btn-register">
+                <i class="fas fa-user-plus"></i> Criar Conta
+            </button>
+            
+            <div class="form-switch">
+                <p>Já tem uma conta?</p>
+                <button type="button" class="btn-switch" onclick="showLoginForm()">
+                    <i class="fas fa-sign-in-alt"></i> Fazer Login
+                </button>
+            </div>
+        </form>
+        
+        <a href="index.html" class="back-link">
+            <i class="fas fa-arrow-left"></i> Voltar para o site
+        </a>
+    </div>
+
+    <script>
+        // Função para carregar administradores do localStorage
+        function loadAdmins() {
+            const admins = localStorage.getItem('admins');
+            return admins ? JSON.parse(admins) : [{ username: 'admin', password: 'admin123' }];
+        }
+        
+        // Função para salvar administradores no localStorage
+        function saveAdmins(admins) {
+            localStorage.setItem('admins', JSON.stringify(admins));
+        }
+        
+        // Função para adicionar um novo administrador
+        function addAdmin(username, password) {
+            const admins = loadAdmins();
+            
+            // Verificar se o usuário já existe
+            if (admins.some(admin => admin.username === username)) {
+                return false;
+            }
+            
+            admins.push({ username, password });
+            saveAdmins(admins);
+            return true;
+        }
+        
+        // Função para verificar credenciais
+        function validateCredentials(username, password) {
+            const admins = loadAdmins();
+            return admins.some(admin => admin.username === username && admin.password === password);
+        }
+        
+        // Função para mostrar formulário de registro
+        function showRegisterForm() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+        }
+        
+        // Função para mostrar formulário de login
+        function showLoginForm() {
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+        }
+        
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Verificar credenciais
+            if (validateCredentials(username, password)) {
+                // Armazenar status de autenticação e dados do usuário
+                localStorage.setItem('adminAuthenticated', 'true');
+                localStorage.setItem('currentUser', username);
+                
+                // Redirecionar para a área administrativa
+                window.location.href = 'admin.html';
+            } else {
+                // Mostrar mensagem de erro
+                document.getElementById('errorMessage').style.display = 'block';
+                
+                // Limpar campos
+                document.getElementById('password').value = '';
+                document.getElementById('username').focus();
+            }
+        });
+        
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('registerUsername').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Verificar se as senhas coincidem
+            if (password !== confirmPassword) {
+                document.getElementById('registerErrorMessage').textContent = 'As senhas não coincidem!';
+                document.getElementById('registerErrorMessage').style.display = 'block';
+                return;
+            }
+            
+            // Tentar adicionar novo administrador
+            if (addAdmin(username, password)) {
+                alert('Conta de administrador criada com sucesso!');
+                showLoginForm();
+                
+                // Preencher o formulário de login com o novo usuário
+                document.getElementById('username').value = username;
+                document.getElementById('password').focus();
+            } else {
+                document.getElementById('registerErrorMessage').textContent = 'Nome de usuário já existe!';
+                document.getElementById('registerErrorMessage').style.display = 'block';
+            }
+        });
+        
+        // Verificar se já está autenticado ao carregar a página
+        window.addEventListener('DOMContentLoaded', function() {
+            if (localStorage.getItem('adminAuthenticated') === 'true') {
+                window.location.href = 'admin.html';
+            }
+        });
+    </script>
+</body>
+</html>
