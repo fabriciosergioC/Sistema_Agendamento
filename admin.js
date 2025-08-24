@@ -559,9 +559,12 @@ class AdminSystem {
 
     getServiceLabel(service) {
         const serviceLabels = {
-            'consulta': 'Consulta',
-            'exame': 'Exame',
-            'procedimento': 'Procedimento',
+            'corte': 'Corte de Cabelo',
+            'coloracao': 'Coloração',
+            'manicure': 'Manicure',
+            'pedicure': 'Pedicure',
+            'depilacao': 'Depilação',
+            'massagem': 'Massagem',
             'outro': 'Outro'
         };
         return serviceLabels[service] || service;
