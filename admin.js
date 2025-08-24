@@ -548,13 +548,26 @@ class AdminSystem {
     }
 
     formatDate(dateString) {
+        // Verificar se a data está no formato ISO (YYYY-MM-DD)
+        if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+            // Separar os componentes da data
+            const [year, month, day] = dateString.split('-');
+            // Retornar no formato DD/MM/YYYY
+            return `${day}/${month}/${year}`;
+        }
+        
         // Se a data já estiver no formato DD/MM/YYYY, retornamos como está
         if (typeof dateString === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
             return dateString;
         }
         
-        // Caso contrário, formatamos a data
+        // Caso contrário, tentamos formatar como Date
         const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+            // Se a data for inválida, retornamos a string original
+            return dateString;
+        }
+        
         return date.toLocaleDateString('pt-BR');
     }
 
