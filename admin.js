@@ -548,6 +548,12 @@ class AdminSystem {
     }
 
     formatDate(dateString) {
+        // Se a data já estiver no formato DD/MM/YYYY, retornamos como está
+        if (typeof dateString === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+            return dateString;
+        }
+        
+        // Caso contrário, formatamos a data
         const date = new Date(dateString);
         return date.toLocaleDateString('pt-BR');
     }
