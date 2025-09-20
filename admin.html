@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Administração - Sistema de Agendamento</title>
     <link rel="stylesheet" href="admin-styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -19,16 +19,16 @@
             justify-content: center;
             align-items: center;
             color: white;
-            font-size: 1.2rem;
+            font-size: 1rem;
             text-align: center;
         }
         
         #authRedirect div {
             background: #1e3c72;
-            padding: 30px;
-            border-radius: 15px;
-            max-width: 400px;
-            margin: 20px;
+            padding: 25px;
+            border-radius: 12px;
+            max-width: 350px;
+            margin: 15px;
         }
         
         #authRedirect a {
@@ -36,7 +36,8 @@
             text-decoration: none;
             font-weight: bold;
             display: inline-block;
-            margin-top: 15px;
+            margin-top: 12px;
+            font-size: 0.9rem;
         }
         
         #authRedirect a:hover {
@@ -44,32 +45,33 @@
         }
         
         .admin-list-section {
-            margin-top: 30px;
-            padding-top: 20px;
+            margin-top: 25px;
+            padding-top: 15px;
             border-top: 1px solid #e2e8f0;
         }
         
         .admin-list-section h3 {
             color: #2d3748;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            font-size: 1.1rem;
         }
         
         .admins-list {
-            max-height: 200px;
+            max-height: 180px;
             overflow-y: auto;
             border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 10px;
+            border-radius: 8px;
+            padding: 8px;
         }
         
         .admin-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px;
+            padding: 8px;
             border-bottom: 1px solid #f1f1f1;
         }
         
@@ -80,16 +82,17 @@
         .admin-username {
             font-weight: 500;
             color: #2d3748;
+            font-size: 0.9rem;
         }
         
         .btn-remove-admin {
             background: #f56565;
             color: white;
             border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
+            padding: 4px 8px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11px;
         }
         
         .btn-remove-admin:hover {
@@ -97,7 +100,7 @@
         }
         
         .current-user {
-            font-size: 12px;
+            font-size: 11px;
             color: #48bb78;
             font-weight: 500;
         }
@@ -109,7 +112,7 @@
             <h1><i class="fas fa-shield-alt"></i> Painel Administrativo</h1>
             <nav>
                 <a href="index.html" class="nav-link">
-                    <i class="fas fa-home"></i> Voltar ao Site
+                    <i class="fas fa-calendar-alt"></i> Agendamento
                 </a>
                 <button id="manageAdminsBtn" class="nav-link">
                     <i class="fas fa-users-cog"></i> Gerenciar Administradores
@@ -177,9 +180,12 @@
                             <label for="filterService">Filtrar por Serviço:</label>
                             <select id="filterService">
                                 <option value="">Todos os Serviços</option>
-                                <option value="consulta">Consulta</option>
-                                <option value="exame">Exame</option>
-                                <option value="procedimento">Procedimento</option>
+                                <option value="corte">Corte de Cabelo</option>
+                                <option value="coloracao">Coloração</option>
+                                <option value="manicure">Manicure</option>
+                                <option value="pedicure">Pedicure</option>
+                                <option value="depilacao">Depilação</option>
+                                <option value="massagem">Massagem</option>
                                 <option value="outro">Outro</option>
                             </select>
                         </div>
@@ -199,9 +205,6 @@
                         <div class="export-actions">
                             <button id="exportCSV" class="btn-export">
                                 <i class="fas fa-download"></i> Exportar CSV
-                            </button>
-                            <button id="exportPDF" class="btn-export">
-                                <i class="fas fa-file-pdf"></i> Exportar PDF
                             </button>
                         </div>
                     </div>
@@ -224,24 +227,27 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="editName">Nome:</label>
-                        <input type="text" id="editName" required>
+                        <input type="text" id="editName" name="editName" required>
                     </div>
                     <div class="form-group">
                         <label for="editEmail">Email:</label>
-                        <input type="email" id="editEmail" required>
+                        <input type="email" id="editEmail" name="editEmail" required>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="editPhone">Telefone:</label>
-                        <input type="tel" id="editPhone" required>
+                        <input type="tel" id="editPhone" name="editPhone" required>
                     </div>
                     <div class="form-group">
                         <label for="editService">Serviço:</label>
-                        <select id="editService" required>
-                            <option value="consulta">Consulta</option>
-                            <option value="exame">Exame</option>
-                            <option value="procedimento">Procedimento</option>
+                        <select id="editService" name="editService" required>
+                            <option value="corte">Corte de Cabelo</option>
+                            <option value="coloracao">Coloração</option>
+                            <option value="manicure">Manicure</option>
+                            <option value="pedicure">Pedicure</option>
+                            <option value="depilacao">Depilação</option>
+                            <option value="massagem">Massagem</option>
                             <option value="outro">Outro</option>
                         </select>
                     </div>
@@ -249,18 +255,25 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="editDate">Data:</label>
-                        <input type="date" id="editDate" required>
+                        <input type="date" id="editDate" name="editDate" required>
                     </div>
                     <div class="form-group">
                         <label for="editTime">Horário:</label>
-                        <select id="editTime" required>
-                            <option value="">Selecione um horário</option>
-                        </select>
+                        <input type="text" id="editTime" name="editTime" readonly required placeholder="Selecione um horário">
+                        <div id="editTimeError" class="error-message" style="color: #f56565; font-size: 13px; margin-top: 4px; display: none;">
+                            Por favor, selecione um horário no painel abaixo.
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Horários Disponíveis:</label>
+                    <div class="time-slots" id="editTimeSlots">
+                        <!-- Horários serão inseridos aqui dinamicamente -->
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="editNotes">Observações:</label>
-                    <textarea id="editNotes" rows="3"></textarea>
+                    <textarea id="editNotes" name="editNotes" rows="2"></textarea>
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="btn-primary">

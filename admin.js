@@ -21,7 +21,6 @@ class AdminSystem {
         this.loadAppointments();
         this.loadAdmins();
         this.setupEventListeners();
-        this.populateTimeSelects();
         this.updateStats();
         this.setMinDate();
         // Aplicar filtro padrão de agendamentos pendentes
@@ -77,10 +76,6 @@ class AdminSystem {
             this.exportToCSV();
         });
 
-        document.getElementById('exportPDF').addEventListener('click', () => {
-            this.exportToPDF();
-        });
-
         // Logout
         document.getElementById('logoutBtn').addEventListener('click', () => {
             this.logout();
@@ -132,18 +127,30 @@ class AdminSystem {
     }
 
     populateTimeSelects() {
-        const editTimeSelect = document.getElementById('editTime');
-        
-        this.timeSlots.forEach(time => {
-            const option = document.createElement('option');
-            option.value = time;
-            option.textContent = time;
-            editTimeSelect.appendChild(option);
-        });
+        // Não é mais necessário pois usamos slots de horário em vez de select
     }
 
     loadAppointments() {
-        this.appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+        try {
+            const appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+            // Filtrar agendamentos com dados válidos
+            this.appointments = appointments.filter(app => {
+                return app && 
+                       typeof app === 'object' && 
+                       app.id && 
+                       (app.name || app.email || app.phone); // Pelo menos um campo deve estar preenchido
+            });
+            
+            // Se encontramos agendamentos inválidos, salvar a lista limpa
+            if (this.appointments.length !== appointments.length) {
+                this.saveAppointments();
+                this.showNotification('Alguns agendamentos com dados inválidos foram removidos.', 'warning');
+            }
+        } catch (error) {
+            console.error('Erro ao carregar agendamentos:', error);
+            this.appointments = [];
+            this.showNotification('Erro ao carregar agendamentos. Lista foi resetada.', 'error');
+        }
     }
 
     loadAdmins() {
@@ -327,28 +334,28 @@ class AdminSystem {
             <div class="appointment-item">
                 <div class="appointment-header">
                     <div class="appointment-info">
-                        <span class="appointment-name">${appointment.name}</span>
-                        <span class="appointment-service">${this.getServiceLabel(appointment.service)}</span>
+                        <span class="appointment-name">${appointment.name || 'Nome não informado'}</span>
+                        <span class="appointment-service">${this.getServiceLabel(appointment.service || 'outro')}</span>
                     </div>
                     <div class="appointment-time-info">
-                        <span class="appointment-date">${this.formatDate(appointment.date)}</span>
-                        <span class="appointment-time">${appointment.time}</span>
+                        <span class="appointment-date">${this.formatDate(appointment.date || new Date().toISOString().split('T')[0])}</span>
+                        <span class="appointment-time">${appointment.time || 'Horário não definido'}</span>
                     </div>
                 </div>
                 <div class="appointment-details">
                     <div class="contact-info">
-                        <p><i class="fas fa-envelope"></i> ${appointment.email}</p>
-                        <p><i class="fas fa-phone"></i> ${appointment.phone}</p>
+                        <p><i class="fas fa-envelope"></i> ${appointment.email || 'Email não informado'}</p>
+                        <p><i class="fas fa-phone"></i> ${appointment.phone || 'Telefone não informado'}</p>
                     </div>
                     ${appointment.notes ? `<p class="notes"><i class="fas fa-sticky-note"></i> <strong>Observações:</strong> ${appointment.notes}</p>` : ''}
-                    <p class="created-at"><i class="fas fa-calendar-plus"></i> <strong>Criado em:</strong> ${this.formatDateTime(appointment.createdAt)}</p>
+                    <p class="created-at"><i class="fas fa-calendar-plus"></i> <strong>Criado em:</strong> ${this.formatDateTime(appointment.createdAt || new Date().toISOString())}</p>
                 </div>
                 <div class="appointment-actions">
-                    <button class="btn-edit" onclick="adminSystem.editAppointment('${appointment.id}')">
-                        <i class="fas fa-edit"></i> Editar
+                    <button class="btn-edit" onclick="adminSystem.editAppointment('${appointment.id}')" title="Editar">
+                        <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn-delete" onclick="adminSystem.showDeleteModal('${appointment.id}')">
-                        <i class="fas fa-trash"></i> Excluir
+                    <button class="btn-delete" onclick="adminSystem.showDeleteModal('${appointment.id}')" title="Excluir">
+                        <i class="fas fa-trash"></i>
                     </button>
                 </div>
             </div>
@@ -358,22 +365,31 @@ class AdminSystem {
     editAppointment(id) {
         const appointment = this.appointments.find(app => app.id === id);
         if (appointment) {
-            document.getElementById('editId').value = appointment.id;
-            document.getElementById('editName').value = appointment.name;
-            document.getElementById('editEmail').value = appointment.email;
-            document.getElementById('editPhone').value = appointment.phone;
-            document.getElementById('editDate').value = appointment.date;
-            document.getElementById('editTime').value = appointment.time;
-            document.getElementById('editService').value = appointment.service;
+            document.getElementById('editId').value = appointment.id || '';
+            document.getElementById('editName').value = appointment.name || '';
+            document.getElementById('editEmail').value = appointment.email || '';
+            document.getElementById('editPhone').value = appointment.phone || '';
+            document.getElementById('editDate').value = appointment.date || '';
+            document.getElementById('editTime').value = appointment.time || '';
+            document.getElementById('editService').value = appointment.service || '';
             document.getElementById('editNotes').value = appointment.notes || '';
             
-            this.updateAvailableTimesForEdit(appointment.date);
+            // Resetar mensagem de erro
+            document.getElementById('editTimeError').style.display = 'none';
+            
+            this.updateAvailableTimesForEdit(appointment.date || '');
             document.getElementById('editModal').style.display = 'block';
         }
     }
 
     closeEditModal() {
         document.getElementById('editModal').style.display = 'none';
+        // Resetar seleção de slots de horário
+        document.querySelectorAll('#editTimeSlots .time-slot').forEach(slot => {
+            slot.classList.remove('selected');
+        });
+        // Resetar mensagem de erro
+        document.getElementById('editTimeError').style.display = 'none';
     }
 
     showDeleteModal(id) {
@@ -432,30 +448,107 @@ class AdminSystem {
     }
 
     updateAppointment() {
-        const formData = new FormData(document.getElementById('editForm'));
         const appointmentId = document.getElementById('editId').value;
+        const selectedTime = document.getElementById('editTime').value;
+        
+        // Verificar se um horário foi selecionado
+        if (!selectedTime) {
+            document.getElementById('editTimeError').style.display = 'block';
+            this.showNotification('Por favor, selecione um horário no painel abaixo.', 'error');
+            return;
+        }
+        
+        // Obter valores dos campos do formulário
+        const name = document.getElementById('editName').value.trim();
+        const email = document.getElementById('editEmail').value.trim();
+        const phone = document.getElementById('editPhone').value.trim();
+        const date = document.getElementById('editDate').value;
+        const service = document.getElementById('editService').value;
+        const notes = document.getElementById('editNotes').value.trim();
+        
+        // Validar campos obrigatórios
+        if (!name) {
+            this.showNotification('O nome é obrigatório.', 'error');
+            document.getElementById('editName').focus();
+            return;
+        }
+        
+        if (!email) {
+            this.showNotification('O email é obrigatório.', 'error');
+            document.getElementById('editEmail').focus();
+            return;
+        }
+        
+        if (!phone) {
+            this.showNotification('O telefone é obrigatório.', 'error');
+            document.getElementById('editPhone').focus();
+            return;
+        }
+        
+        if (!date) {
+            this.showNotification('A data é obrigatória.', 'error');
+            document.getElementById('editDate').focus();
+            return;
+        }
+        
+        if (!service) {
+            this.showNotification('O serviço é obrigatório.', 'error');
+            document.getElementById('editService').focus();
+            return;
+        }
         
         const updatedAppointment = {
             id: appointmentId,
-            name: formData.get('editName'),
-            email: formData.get('editEmail'),
-            phone: formData.get('editPhone'),
-            date: formData.get('editDate'),
-            time: formData.get('editTime'),
-            service: formData.get('editService'),
-            notes: formData.get('editNotes'),
+            name: name,
+            email: email,
+            phone: phone,
+            date: date,
+            time: selectedTime,
+            service: service,
+            notes: notes,
             createdAt: this.appointments.find(app => app.id === appointmentId)?.createdAt || new Date().toISOString()
         };
 
+        console.log('updateAppointment - Dados coletados:', {
+            appointmentId,
+            name,
+            email,
+            phone,
+            date,
+            selectedTime,
+            service
+        });
+        
         // Verificar se o horário já está ocupado por outro agendamento
-        const conflictingAppointment = this.appointments.find(app => 
-            app.id !== appointmentId && 
-            app.date === updatedAppointment.date && 
-            app.time === updatedAppointment.time
-        );
+        const conflictingAppointment = this.appointments.find(app => {
+            const dateMatch = app.date === date;
+            const timeMatch = app.time === selectedTime;
+            const differentId = app.id !== appointmentId;
+            
+            console.log('Verificando conflito com agendamento:', {
+                appointmentName: app.name,
+                appointmentId: app.id,
+                appointmentDate: app.date,
+                appointmentTime: app.time,
+                dateMatch,
+                timeMatch,
+                differentId,
+                isConflict: dateMatch && timeMatch && differentId
+            });
+            
+            return dateMatch && timeMatch && differentId;
+        });
+        
+        console.log('Resultado da verificação de conflito:', conflictingAppointment);
 
         if (conflictingAppointment) {
-            this.showNotification('Este horário já está ocupado por outro agendamento.', 'error');
+            console.log('CONFLITO DETECTADO!');
+            this.showNotification(
+                `Este horário já está ocupado por ${conflictingAppointment.name || 'outro agendamento'}. Por favor, selecione outro horário.`, 
+                'error'
+            );
+            // Atualizar os slots para mostrar o conflito
+            this.updateAvailableTimesForEdit(date);
             return;
         }
 
@@ -467,6 +560,8 @@ class AdminSystem {
             this.updateStats();
             this.closeEditModal();
             this.showNotification('Agendamento atualizado com sucesso!', 'success');
+        } else {
+            this.showNotification('Erro: Agendamento não encontrado.', 'error');
         }
     }
 
@@ -480,28 +575,105 @@ class AdminSystem {
     }
 
     updateAvailableTimesForEdit(selectedDate) {
-        const editTimeSelect = document.getElementById('editTime');
+        const editTimeInput = document.getElementById('editTime');
+        const editTimeSlotsContainer = document.getElementById('editTimeSlots');
         const currentAppointmentId = document.getElementById('editId').value;
         
-        // Limpar opções existentes
-        editTimeSelect.innerHTML = '<option value="">Selecione um horário</option>';
+        console.log('updateAvailableTimesForEdit - selectedDate:', selectedDate);
+        console.log('updateAvailableTimesForEdit - currentAppointmentId:', currentAppointmentId);
+        console.log('updateAvailableTimesForEdit - todos os agendamentos:', this.appointments);
         
+        // Limpar slots existentes
+        editTimeSlotsContainer.innerHTML = '';
+        
+        // Criar slots de horário
         this.timeSlots.forEach(time => {
-            const isBooked = this.appointments.some(app => 
-                app.date === selectedDate && 
-                app.time === time && 
-                app.id !== currentAppointmentId
-            );
+            // Verificar se o horário está ocupado por outro agendamento (exceto o atual sendo editado)
+            const conflictingAppointments = this.appointments.filter(app => {
+                const dateMatch = app.date === selectedDate;
+                const timeMatch = app.time === time;
+                const notCurrentAppointment = app.id !== currentAppointmentId;
+                
+                console.log(`Verificando conflito para ${time}:`, {
+                    appointment: app.name,
+                    id: app.id,
+                    date: app.date,
+                    time: app.time,
+                    dateMatch,
+                    timeMatch,
+                    notCurrentAppointment,
+                    isConflict: dateMatch && timeMatch && notCurrentAppointment
+                });
+                
+                return dateMatch && timeMatch && notCurrentAppointment;
+            });
             
-            const option = document.createElement('option');
-            option.value = time;
-            option.textContent = time;
+            const isBooked = conflictingAppointments.length > 0;
+            
             if (isBooked) {
-                option.textContent += ' (Ocupado)';
-                option.disabled = true;
+                console.log(`Horário ${time} está OCUPADO por:`, conflictingAppointments);
             }
-            editTimeSelect.appendChild(option);
+            
+            const slot = document.createElement('div');
+            slot.className = 'time-slot';
+            slot.dataset.time = time;
+            slot.textContent = time;
+            
+            if (isBooked) {
+                // Horário ocupado - não clicável
+                slot.classList.add('booked');
+                slot.style.cursor = 'not-allowed';
+                slot.title = `Horário ocupado por ${conflictingAppointments[0].name}`;
+            } else {
+                // Horário disponível - clicável
+                slot.classList.add('available');
+                slot.style.cursor = 'pointer';
+                slot.title = 'Clique para selecionar';
+                
+                // Adicionar evento de clique apenas para slots disponíveis
+                slot.addEventListener('click', (e) => {
+                    // Verificar novamente se o slot ainda está disponível
+                    if (!e.target.classList.contains('booked')) {
+                        // Remover seleção anterior
+                        document.querySelectorAll('#editTimeSlots .time-slot').forEach(s => {
+                            s.classList.remove('selected');
+                        });
+                        
+                        // Adicionar seleção ao slot clicado
+                        e.target.classList.add('selected');
+                        
+                        // Atualizar campo de horário no formulário
+                        document.getElementById('editTime').value = time;
+                        
+                        // Ocultar mensagem de erro, se estiver visível
+                        document.getElementById('editTimeError').style.display = 'none';
+                    } else {
+                        // Mostrar notificação se tentar clicar em horário ocupado
+                        this.showNotification('Este horário já está ocupado por outro agendamento.', 'error');
+                    }
+                });
+            }
+            
+            editTimeSlotsContainer.appendChild(slot);
         });
+        
+        // Se estiver editando um agendamento existente, selecionar o horário atual
+        const currentAppointment = this.appointments.find(app => app.id === currentAppointmentId);
+        if (currentAppointment) {
+            console.log('Agendamento atual encontrado:', currentAppointment);
+            if (currentAppointment.date === selectedDate) {
+                const slotToSelect = editTimeSlotsContainer.querySelector(`.time-slot[data-time="${currentAppointment.time}"]`);
+                if (slotToSelect) {
+                    slotToSelect.classList.add('selected');
+                    // Garantir que o horário atual sempre esteja disponível para reselecionar
+                    slotToSelect.classList.remove('booked');
+                    slotToSelect.classList.add('available');
+                    slotToSelect.style.cursor = 'pointer';
+                }
+            }
+        } else {
+            console.log('ERRO: Agendamento atual não encontrado para ID:', currentAppointmentId);
+        }
     }
 
     saveAppointments() {
@@ -533,10 +705,7 @@ class AdminSystem {
         this.showNotification('Arquivo CSV exportado com sucesso!', 'success');
     }
 
-    exportToPDF() {
-        // Implementação básica de PDF usando jsPDF (seria necessário incluir a biblioteca)
-        this.showNotification('Funcionalidade de PDF em desenvolvimento. Use a exportação CSV por enquanto.', 'info');
-    }
+    
 
     logout() {
         if (confirm('Tem certeza que deseja sair?')) {
@@ -548,6 +717,11 @@ class AdminSystem {
     }
 
     formatDate(dateString) {
+        // Verificar se o valor é null, undefined ou string vazia
+        if (!dateString || dateString === 'null' || dateString === 'undefined') {
+            return 'Data não informada';
+        }
+        
         // Verificar se a data está no formato ISO (YYYY-MM-DD)
         if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
             // Separar os componentes da data
@@ -564,15 +738,24 @@ class AdminSystem {
         // Caso contrário, tentamos formatar como Date
         const date = new Date(dateString);
         if (isNaN(date.getTime())) {
-            // Se a data for inválida, retornamos a string original
-            return dateString;
+            // Se a data for inválida, retornamos uma mensagem padrão
+            return 'Data inválida';
         }
         
         return date.toLocaleDateString('pt-BR');
     }
 
     formatDateTime(dateTimeString) {
+        // Verificar se o valor é null, undefined ou string vazia
+        if (!dateTimeString || dateTimeString === 'null' || dateTimeString === 'undefined') {
+            return 'Data não informada';
+        }
+        
         const date = new Date(dateTimeString);
+        if (isNaN(date.getTime())) {
+            return 'Data inválida';
+        }
+        
         return date.toLocaleString('pt-BR');
     }
 
@@ -599,18 +782,19 @@ class AdminSystem {
         
         notification.style.cssText = `
             position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 8px;
+            top: 15px;
+            right: 15px;
+            padding: 12px 16px;
+            border-radius: 6px;
             color: white;
             font-weight: 600;
             z-index: 10000;
             display: flex;
             align-items: center;
-            gap: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             animation: slideIn 0.3s ease;
+            font-size: 0.9rem;
         `;
         
         const colors = {
@@ -628,7 +812,7 @@ class AdminSystem {
             if (notification.parentElement) {
                 notification.remove();
             }
-        }, 5000);
+        }, 4000);
     }
 }
 
@@ -650,7 +834,7 @@ notificationStyles.textContent = `
         background: none;
         border: none;
         color: white;
-        font-size: 18px;
+        font-size: 16px;
         cursor: pointer;
         padding: 0;
         margin: 0;
@@ -660,7 +844,8 @@ notificationStyles.textContent = `
         text-align: center;
         color: #718096;
         font-style: italic;
-        padding: 20px;
+        padding: 16px;
+        font-size: 0.9rem;
     }
 `;
 document.head.appendChild(notificationStyles);
