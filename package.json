@@ -1,0 +1,16 @@
+{
+  "name": "salao-agendamento",
+  "version": "1.0.0",
+  "description": "Sistema de agendamento para salão de beleza",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "build": "echo 'No build required for static site'"
+  },
+  "keywords": ["agendamento", "salao", "beleza"],
+  "author": "Desenvolvedor",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.0"
+  }
+}
