@@ -1,16 +1,6 @@
-# Sistema de Agendamento de Salão de Beleza
+# Salão de Beleza - Sistema de Agendamento
 
-Este é um sistema completo de agendamento para salão de beleza, com frontend em HTML, CSS e JavaScript, utilizando localStorage para armazenamento de dados.
-
-## Estrutura do Projeto
-
-- `index.html` - Página principal de agendamento
-- `admin.html` - Painel administrativo
-- `login.html` - Página de login/administração
-- `script.js` - Lógica do sistema de agendamento
-- `admin.js` - Lógica do painel administrativo
-- `styles.css` - Estilos principais
-- `admin-styles.css` - Estilos do painel administrativo
+Este é um sistema completo de agendamento para salão de beleza, desenvolvido com HTML, CSS e JavaScript, utilizando localStorage para armazenamento de dados.
 
 ## Funcionalidades
 
