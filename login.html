@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Login - Sistema de Agendamento</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 1.5vw;
+    margin: 0;
+    height: 100vh;
+    width: 100%;
+    box-sizing: border-box;
+}
+        
+        .login-container {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
+    box-sizing: border-box;
+}
+        
+        .login-header {
+            margin-bottom: 15px;
+        }
+        
+        .login-header h1 {
+            color: #1e3c72;
+            font-size: 18px;
+            margin-bottom: 6px;
+        }
+        
+        .login-header p {
+            color: #718096;
+            font-size: 12px;
+        }
+        
+        .logo {
+    width: 30px;
+    height: 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px;
+    font-size: 12px;
+    color: white;
+}
+        
+        .form-group {
+    margin-bottom: 12px;
+    text-align: left;
+}
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 13px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.3vw rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn-login, .btn-register {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            width: 100%;
+            margin-top: 8px;
+            box-sizing: border-box;
+        }
+        
+        .btn-login:hover, .btn-register:hover {
+            transform: translateY(-0.5vw);
+            box-shadow: 0 1vw 2vw rgba(30, 60, 114, 0.3);
+        }
+        
+        .btn-register {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+        }
+        
+        .error-message {
+            color: #f56565;
+            background: #fed7d7;
+            padding: 6px;
+            border-radius: 3px;
+            margin-top: 6px;
+            display: none;
+            font-size: 10px;
+        }
+        
+        .back-link {
+            display: block;
+            margin-top: 12px;
+            color: #2a5298;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            font-size: 11px;
+        }
+        
+        .back-link:hover {
+            color: #1e3c72;
+            text-decoration: underline;
+        }
+        
+        .form-switch {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .form-switch p {
+            color: #4a5568;
+            margin-bottom: 6px;
+            font-size: 11px;
+        }
+        
+        .btn-switch {
+            background: #718096;
+            color: white;
+            border: none;
+            padding: 6px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .btn-switch:hover {
+            background: #4a5568;
+        }
+        
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 3vw 2vw;
+            }
+            
+            .login-header h1 {
+                font-size: clamp(1.4rem, 5vw, 2rem);
+            }
+            
+            .btn-switch {
+                padding: 1.5vw;
+            }
+        }
+        
+        /* Ajustes para telas maiores */
+        @media (min-width: 1200px) {
+            body {
+                padding: 3vw;
+            }
+            
+            .login-container {
+                padding: 4vw;
+            }
+        }
+        
+        .register-form {
+            display: none;
+        }
+        
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 4vmin 3vmin;
+            }
+            
+            .login-header h1 {
+                font-size: clamp(1.4rem, 5vmin, 2rem);
+            }
+            
+            .btn-switch {
+                padding: 2vmin;
+            }
+        }
+        
+        /* Ajustes para telas maiores */
+        @media (min-width: 1200px) {
+            body {
+                padding: 3vmax;
+            }
+            
+            .login-container {
+                padding: 5vmax;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo">
+                <i class="fas fa-lock"></i>
+            </div>
+            <h1>Acesso Restrito</h1>
+            <p>Área Administrativa</p>
+        </div>
+        
+        <!-- Formulário de Login -->
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Usuário</label>
+                <input type="text" id="username" name="username" required placeholder="Digite seu usuário">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Senha</label>
+                <input type="password" id="password" name="password" required placeholder="Digite sua senha">
+            </div>
+            
+            <div id="errorMessage" class="error-message">
+                Usuário ou senha incorretos. Tente novamente.
+            </div>
+            
+            <button type="submit" class="btn-login">
+                <i class="fas fa-sign-in-alt"></i> Entrar
+            </button>
+            
+            <div class="form-switch">
+                <p>Não tem uma conta?</p>
+                <button type="button" class="btn-switch" onclick="showRegisterForm()">
+                    <i class="fas fa-user-plus"></i> Criar Conta de Administrador
+                </button>
+            </div>
+        </form>
+        
+        <!-- Formulário de Registro -->
+        <form id="registerForm" class="register-form">
+            <div class="form-group">
+                <label for="registerUsername">Novo Usuário</label>
+                <input type="text" id="registerUsername" name="registerUsername" required placeholder="Escolha um nome de usuário">
+            </div>
+            
+            <div class="form-group">
+                <label for="registerPassword">Nova Senha</label>
+                <input type="password" id="registerPassword" name="registerPassword" required placeholder="Escolha uma senha">
+            </div>
+            
+            <div class="form-group">
+                <label for="confirmPassword">Confirmar Senha</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="Confirme sua senha">
+            </div>
+            
+            <div id="registerErrorMessage" class="error-message">
+                Erro ao criar conta. Tente novamente.
+            </div>
+            
+            <button type="submit" class="btn-register">
+                <i class="fas fa-user-plus"></i> Criar Conta
+            </button>
+            
+            <div class="form-switch">
+                <p>Já tem uma conta?</p>
+                <button type="button" class="btn-switch" onclick="showLoginForm()">
+                    <i class="fas fa-sign-in-alt"></i> Fazer Login
+                </button>
+            </div>
+        </form>
+        
+        <a href="index.html" class="back-link">
+            <i class="fas fa-arrow-left"></i> Voltar para o site
+        </a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script>
+        // Função para carregar administradores
+        async function loadAdmins() {
+            return await window.dbService.getAdmins();
+        }
+        
+        // Função para adicionar um novo administrador
+        async function addAdmin(username, password) {
+            return await window.dbService.addAdmin(username, password);
+        }
+        
+        // Função para verificar credenciais
+        async function validateCredentials(username, password) {
+            return await window.dbService.validateAdmin(username, password);
+        }
+        
+        // Função para mostrar formulário de registro
+        function showRegisterForm() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+        }
+        
+        // Função para mostrar formulário de login
+        function showLoginForm() {
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+        }
+        
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Verificar credenciais
+            const isValid = await validateCredentials(username, password);
+            if (isValid) {
+                // Armazenar status de autenticação e dados do usuário
+                localStorage.setItem('adminAuthenticated', 'true');
+                localStorage.setItem('currentUser', username);
+                
+                // Redirecionar para a área administrativa
+                window.location.href = 'admin.html';
+            } else {
+                // Mostrar mensagem de erro
+                document.getElementById('errorMessage').style.display = 'block';
+                
+                // Limpar campos
+                document.getElementById('password').value = '';
+                document.getElementById('username').focus();
+            }
+        });
+        
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('registerUsername').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Verificar se as senhas coincidem
+            if (password !== confirmPassword) {
+                document.getElementById('registerErrorMessage').textContent = 'As senhas não coincidem!';
+                document.getElementById('registerErrorMessage').style.display = 'block';
+                return;
+            }
+            
+            // Tentar adicionar novo administrador
+            const res = await addAdmin(username, password);
+            if (res.success) {
+                alert('Conta de administrador criada com sucesso!');
+                showLoginForm();
+                
+                // Preencher o formulário de login com o novo usuário
+                document.getElementById('username').value = username;
+                document.getElementById('password').focus();
+            } else {
+                document.getElementById('registerErrorMessage').textContent = res.message || 'Erro ao criar conta!';
+                document.getElementById('registerErrorMessage').style.display = 'block';
+            }
+        });
+        
+        // Verificar se já está autenticado ao carregar a página
+        window.addEventListener('DOMContentLoaded', function() {
+            if (localStorage.getItem('adminAuthenticated') === 'true') {
+                window.location.href = 'admin.html';
+            }
+        });
+    </script>
+</body>
+</html>

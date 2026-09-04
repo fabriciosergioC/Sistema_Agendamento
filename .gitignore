@@ -1,0 +1,9 @@
+node_modules/
+npm-debug.log
+.env
+.git/
+deploy-netlify/
+deploy-netlify.zip
+*.log
+.DS_Store
+Thumbs.db
