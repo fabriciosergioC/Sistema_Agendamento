@@ -23,8 +23,8 @@ class AdminSystem {
         this.setupEventListeners();
         this.updateStats();
         this.setMinDate();
-        // Aplicar filtro padrão de agendamentos pendentes
-        this.setQuickFilter('pending');
+        // Mostrar todos os agendamentos por padrão (não apenas pendentes)
+        this.setQuickFilter('all');
         
         // Renderizar lista de administradores se o modal estiver visível
         if (document.getElementById('adminsModal') && 
@@ -219,9 +219,9 @@ class AdminSystem {
         if (this.currentFilters.search) {
             const searchTerm = this.currentFilters.search.toLowerCase();
             filteredAppointments = filteredAppointments.filter(app => 
-                app.name.toLowerCase().includes(searchTerm) ||
-                app.email.toLowerCase().includes(searchTerm) ||
-                app.phone.includes(searchTerm)
+                (app.name && app.name.toLowerCase().includes(searchTerm)) ||
+                (app.email && app.email.toLowerCase().includes(searchTerm)) ||
+                (app.phone && app.phone.includes(searchTerm))
             );
         }
 
