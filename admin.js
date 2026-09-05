@@ -133,18 +133,17 @@ class AdminSystem {
     async loadAppointments() {
         try {
             const appointments = await window.dbService.getAppointments();
-            this.appointments = appointments.filter(app => {
-                return app && 
-                       typeof app === 'object' && 
-                       app.id && 
-                       (app.name || app.email || app.phone);
-            });
+            console.log('📋 [Admin] Agendamentos recebidos do banco:', appointments);
+            // Filtro simples: só precisa ter um id válido
+            this.appointments = (appointments || []).filter(app => app && app.id);
+            console.log(`📋 [Admin] ${this.appointments.length} agendamento(s) carregado(s).`);
         } catch (error) {
             console.error('Erro ao carregar agendamentos:', error);
             this.appointments = [];
             this.showNotification('Erro ao carregar agendamentos.', 'error');
         }
     }
+
 
     async loadAdmins() {
         this.admins = await window.dbService.getAdmins();

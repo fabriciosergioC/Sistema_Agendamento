@@ -15,6 +15,12 @@ CREATE TABLE IF NOT EXISTS public.appointments (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- CORREÇÃO: Remover restrição NOT NULL de colunas opcionais (caso a tabela já exista com restrição errada)
+ALTER TABLE public.appointments ALTER COLUMN email DROP NOT NULL;
+ALTER TABLE public.appointments ALTER COLUMN phone DROP NOT NULL;
+ALTER TABLE public.appointments ALTER COLUMN notes DROP NOT NULL;
+ALTER TABLE public.appointments ALTER COLUMN status SET DEFAULT 'pending';
+
 -- 2. Tabela de Administradores (admins)
 CREATE TABLE IF NOT EXISTS public.admins (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
