@@ -338,7 +338,7 @@ class AdminSystem {
                         <p><i class="fas fa-phone"></i> ${appointment.phone || 'Telefone não informado'}</p>
                     </div>
                     ${appointment.notes ? `<p class="notes"><i class="fas fa-sticky-note"></i> <strong>Observações:</strong> ${appointment.notes}</p>` : ''}
-                    <p class="created-at"><i class="fas fa-calendar-plus"></i> <strong>Criado em:</strong> ${this.formatDateTime(appointment.createdAt || new Date().toISOString())}</p>
+                    <p class="created-at"><i class="fas fa-calendar-plus"></i> <strong>Criado em:</strong> ${this.formatDateTime(appointment.created_at || appointment.createdAt || new Date().toISOString())}</p>
                 </div>
                 <div class="appointment-actions">
                     <button class="btn-edit" onclick="adminSystem.editAppointment('${appointment.id}')" title="Editar">
@@ -487,16 +487,22 @@ class AdminSystem {
             return;
         }
         
+        // Montar objeto de atualização (sem o id, que é o filtro do update)
         const updatedAppointment = {
-            id: appointmentId,
             name: name,
             email: email,
             phone: phone,
             date: date,
             time: selectedTime,
             service: service,
-            notes: notes,
-            createdAt: this.appointments.find(app => app.id === appointmentId)?.createdAt || new Date().toISOString()
+            notes: notes
+        };
+
+        // Manter referência local com id para busca
+        const updatedAppointmentFull = {
+            id: appointmentId,
+            ...updatedAppointment,
+            created_at: this.appointments.find(app => app.id === appointmentId)?.created_at || new Date().toISOString()
         };
 
         console.log('updateAppointment - Dados coletados:', {
