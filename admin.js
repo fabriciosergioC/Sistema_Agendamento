@@ -459,7 +459,7 @@ class AdminSystem {
         document.getElementById('confirmAdminPassword').value = '';
     }
 
-    updateAppointment() {
+    async updateAppointment() {
         const appointmentId = document.getElementById('editId').value;
         const selectedTime = document.getElementById('editTime').value;
         
