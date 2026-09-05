@@ -38,27 +38,47 @@ window.dbService = {
 
     // --- AGENDAMENTOS ---
     async getAppointments() {
+        let supabaseAppointments = [];
         if (this.isSupabaseActive()) {
             try {
                 console.log('🔄 [Supabase] Buscando agendamentos...');
-                const { data, error } = await supabaseClient
+                let { data, error } = await supabaseClient
                     .from('appointments')
                     .select('*')
                     .order('created_at', { ascending: false });
 
                 if (error) {
-                    _showSupabaseError('getAppointments', error);
-                    // Fallback para localStorage
-                    return JSON.parse(localStorage.getItem('appointments')) || [];
+                    console.warn('⚠️ [Supabase] Erro ao buscar com ordem created_at, tentando busca simples...', error);
+                    const fallbackRes = await supabaseClient
+                        .from('appointments')
+                        .select('*');
+                    data = fallbackRes.data;
+                    if (fallbackRes.error) {
+                        _showSupabaseError('getAppointments', fallbackRes.error);
+                    }
                 }
-                console.log(`✅ [Supabase] ${data?.length || 0} agendamentos carregados.`);
-                return data || [];
+                
+                if (data && Array.isArray(data)) {
+                    supabaseAppointments = data;
+                    console.log(`✅ [Supabase] ${supabaseAppointments.length} agendamento(s) carregado(s).`);
+                }
             } catch (err) {
                 _showSupabaseError('getAppointments (catch)', err);
             }
         }
-        console.log('ℹ️ [dbService] Usando localStorage para agendamentos.');
-        return JSON.parse(localStorage.getItem('appointments')) || [];
+        
+        // Mesclar com agendamentos do localStorage para garantir redundância
+        const localAppointments = JSON.parse(localStorage.getItem('appointments')) || [];
+        const combined = [...supabaseAppointments];
+
+        localAppointments.forEach(localItem => {
+            if (localItem && localItem.id && !combined.some(item => item.id === localItem.id)) {
+                combined.push(localItem);
+            }
+        });
+
+        console.log(`📋 [dbService] Total de ${combined.length} agendamento(s) mesclado(s).`);
+        return combined;
     },
 
     async addAppointment(appointment) {

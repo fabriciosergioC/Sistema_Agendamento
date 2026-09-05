@@ -235,38 +235,52 @@ class AdminSystem {
         this.renderAppointments(filteredAppointments);
     }
 
+    getTodayString() {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     setQuickFilter(filterType) {
         // Remover classe active de todos os botões
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.classList.remove('active');
         });
         
-        // Adicionar classe active ao botão clicado
-        document.getElementById(`filter${filterType.charAt(0).toUpperCase() + filterType.slice(1)}`).classList.add('active');
+        // Adicionar classe active ao botão clicado se existir
+        const btnId = `filter${filterType.charAt(0).toUpperCase() + filterType.slice(1)}`;
+        const btn = document.getElementById(btnId);
+        if (btn) btn.classList.add('active');
         
         // Aplicar filtro baseado no tipo
         let filteredAppointments = [...this.appointments];
-        const today = new Date().toISOString().split('T')[0];
+        const today = this.getTodayString();
         
         switch(filterType) {
             case 'pending':
                 // Agendamentos futuros (incluindo hoje)
-                filteredAppointments = filteredAppointments.filter(app => app.date >= today);
+                filteredAppointments = filteredAppointments.filter(app => app && app.date >= today);
                 break;
             case 'today':
                 // Apenas agendamentos de hoje
-                filteredAppointments = filteredAppointments.filter(app => app.date === today);
+                filteredAppointments = filteredAppointments.filter(app => app && app.date === today);
                 break;
             case 'week':
                 // Agendamentos desta semana
                 const weekFromNow = new Date();
                 weekFromNow.setDate(weekFromNow.getDate() + 7);
-                const weekEnd = weekFromNow.toISOString().split('T')[0];
+                const wYear = weekFromNow.getFullYear();
+                const wMonth = String(weekFromNow.getMonth() + 1).padStart(2, '0');
+                const wDay = String(weekFromNow.getDate()).padStart(2, '0');
+                const weekEnd = `${wYear}-${wMonth}-${wDay}`;
                 filteredAppointments = filteredAppointments.filter(app => 
-                    app.date >= today && app.date <= weekEnd
+                    app && app.date >= today && app.date <= weekEnd
                 );
                 break;
             case 'all':
+            default:
                 // Todos os agendamentos
                 filteredAppointments = [...this.appointments];
                 break;
@@ -274,9 +288,9 @@ class AdminSystem {
         
         // Limpar filtros manuais
         this.currentFilters = { date: '', service: '', search: '' };
-        document.getElementById('filterDate').value = '';
-        document.getElementById('filterService').value = '';
-        document.getElementById('searchTerm').value = '';
+        if (document.getElementById('filterDate')) document.getElementById('filterDate').value = '';
+        if (document.getElementById('filterService')) document.getElementById('filterService').value = '';
+        if (document.getElementById('searchTerm')) document.getElementById('searchTerm').value = '';
         
         // Renderizar agendamentos filtrados
         this.renderAppointments(filteredAppointments);
@@ -284,38 +298,47 @@ class AdminSystem {
 
     clearFilters() {
         this.currentFilters = { date: '', service: '', search: '' };
-        document.getElementById('filterDate').value = '';
-        document.getElementById('filterService').value = '';
-        document.getElementById('searchTerm').value = '';
+        if (document.getElementById('filterDate')) document.getElementById('filterDate').value = '';
+        if (document.getElementById('filterService')) document.getElementById('filterService').value = '';
+        if (document.getElementById('searchTerm')) document.getElementById('searchTerm').value = '';
         
-        // Resetar filtro rápido para "Pendentes"
-        this.setQuickFilter('pending');
+        // Resetar filtro rápido para "Todos"
+        this.setQuickFilter('all');
     }
 
     updateStats() {
         const total = this.appointments.length;
-        const today = new Date().toISOString().split('T')[0];
-        const todayCount = this.appointments.filter(app => app.date === today).length;
-        const upcomingCount = this.appointments.filter(app => app.date > today).length;
+        const today = this.getTodayString();
+        const todayCount = this.appointments.filter(app => app && app.date === today).length;
+        const upcomingCount = this.appointments.filter(app => app && app.date > today).length;
 
-        document.getElementById('totalAppointments').textContent = total;
-        document.getElementById('todayAppointments').textContent = todayCount;
-        document.getElementById('upcomingAppointments').textContent = upcomingCount;
+        const totalEl = document.getElementById('totalAppointments');
+        const todayEl = document.getElementById('todayAppointments');
+        const upcomingEl = document.getElementById('upcomingAppointments');
+
+        if (totalEl) totalEl.textContent = total;
+        if (todayEl) todayEl.textContent = todayCount;
+        if (upcomingEl) upcomingEl.textContent = upcomingCount;
     }
 
     renderAppointments(appointmentsToRender = null) {
         const appointmentsList = document.getElementById('appointmentsList');
+        if (!appointmentsList) return;
+
         const appointments = appointmentsToRender || this.appointments;
         
-        if (appointments.length === 0) {
+        if (!appointments || appointments.length === 0) {
             appointmentsList.innerHTML = '<p class="no-appointments">Nenhum agendamento encontrado.</p>';
             return;
         }
 
-        // Ordenar por data e hora
-        const sortedAppointments = appointments.sort((a, b) => {
-            const dateA = new Date(a.date + 'T' + a.time);
-            const dateB = new Date(b.date + 'T' + b.time);
+        // Ordenar por data e hora de forma segura
+        const sortedAppointments = [...appointments].sort((a, b) => {
+            const dateStrA = (a.date || '') + 'T' + (a.time || '00:00');
+            const dateStrB = (b.date || '') + 'T' + (b.time || '00:00');
+            const dateA = new Date(dateStrA);
+            const dateB = new Date(dateStrB);
+            if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
             return dateA - dateB;
         });
 
