@@ -13,7 +13,22 @@ if (typeof supabase !== 'undefined' && SUPABASE_URL && SUPABASE_ANON_KEY && SUPA
         console.error('⚠️ [Supabase] Erro ao inicializar cliente Supabase:', e);
     }
 } else {
-    console.warn('ℹ️ [Supabase] Credenciais do Supabase não configuradas em `supabase-config.js`. Utilizando localStorage como fallback.');
+    console.warn('ℹ️ [Supabase] Credenciais não configuradas. Usando localStorage como fallback.');
+}
+
+// Função auxiliar para mostrar erros do Supabase de forma visível
+function _showSupabaseError(operacao, err) {
+    const msg = err?.message || JSON.stringify(err);
+    const details = err?.details || '';
+    const hint = err?.hint || '';
+    console.error(`❌ [Supabase] Erro em "${operacao}":`, err);
+    console.error(`   Mensagem: ${msg}`);
+    if (details) console.error(`   Detalhes: ${details}`);
+    if (hint)    console.error(`   Dica: ${hint}`);
+    // Alerta visível apenas em modo debug (remova se não quiser)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        alert(`❌ Erro Supabase (${operacao}):\n${msg}\n${details}\n${hint}`);
+    }
 }
 
 window.dbService = {
@@ -25,40 +40,76 @@ window.dbService = {
     async getAppointments() {
         if (this.isSupabaseActive()) {
             try {
+                console.log('🔄 [Supabase] Buscando agendamentos...');
                 const { data, error } = await supabaseClient
                     .from('appointments')
                     .select('*')
                     .order('created_at', { ascending: false });
 
-                if (error) throw error;
+                if (error) {
+                    _showSupabaseError('getAppointments', error);
+                    // Fallback para localStorage
+                    return JSON.parse(localStorage.getItem('appointments')) || [];
+                }
+                console.log(`✅ [Supabase] ${data?.length || 0} agendamentos carregados.`);
                 return data || [];
             } catch (err) {
-                console.error('Erro Supabase (getAppointments):', err);
+                _showSupabaseError('getAppointments (catch)', err);
             }
         }
+        console.log('ℹ️ [dbService] Usando localStorage para agendamentos.');
         return JSON.parse(localStorage.getItem('appointments')) || [];
     },
 
     async addAppointment(appointment) {
         if (this.isSupabaseActive()) {
             try {
+                // Garantir que date está no formato correto YYYY-MM-DD
+                const payload = {
+                    id: appointment.id,
+                    name: appointment.name,
+                    email: appointment.email || null,
+                    phone: appointment.phone || null,
+                    date: appointment.date, // deve ser YYYY-MM-DD
+                    time: appointment.time,
+                    service: appointment.service,
+                    notes: appointment.notes || null,
+                    status: appointment.status || 'pending'
+                    // created_at é gerado automaticamente pelo banco (DEFAULT NOW())
+                };
+
+                console.log('🔄 [Supabase] Salvando agendamento:', payload);
+
                 const { data, error } = await supabaseClient
                     .from('appointments')
-                    .insert([appointment])
+                    .insert([payload])
                     .select();
 
-                if (error) throw error;
+                if (error) {
+                    _showSupabaseError('addAppointment', error);
+                    // Salva localmente como fallback
+                    const local = JSON.parse(localStorage.getItem('appointments')) || [];
+                    local.unshift(appointment);
+                    localStorage.setItem('appointments', JSON.stringify(local));
+                    return appointment;
+                }
 
-                // Manter cópia local para redundância
+                console.log('✅ [Supabase] Agendamento salvo com sucesso!', data?.[0]);
+                // Cópia local para redundância
+                const local = JSON.parse(localStorage.getItem('appointments')) || [];
+                local.unshift(data?.[0] || appointment);
+                localStorage.setItem('appointments', JSON.stringify(local));
+                return data ? data[0] : appointment;
+            } catch (err) {
+                _showSupabaseError('addAppointment (catch)', err);
+                // Fallback
                 const local = JSON.parse(localStorage.getItem('appointments')) || [];
                 local.unshift(appointment);
                 localStorage.setItem('appointments', JSON.stringify(local));
-
-                return data ? data[0] : appointment;
-            } catch (err) {
-                console.error('Erro Supabase (addAppointment):', err);
+                return appointment;
             }
         }
+        console.log('ℹ️ [dbService] Salvando agendamento no localStorage.');
         const local = JSON.parse(localStorage.getItem('appointments')) || [];
         local.unshift(appointment);
         localStorage.setItem('appointments', JSON.stringify(local));
@@ -68,14 +119,22 @@ window.dbService = {
     async updateAppointment(id, updatedFields) {
         if (this.isSupabaseActive()) {
             try {
+                // Remover campos que não devem ir no update
+                const { id: _id, created_at: _ca, createdAt: _ca2, ...fieldsToUpdate } = updatedFields;
+                console.log('🔄 [Supabase] Atualizando agendamento id:', id, fieldsToUpdate);
+
                 const { error } = await supabaseClient
                     .from('appointments')
-                    .update(updatedFields)
+                    .update(fieldsToUpdate)
                     .eq('id', id);
 
-                if (error) throw error;
+                if (error) {
+                    _showSupabaseError('updateAppointment', error);
+                } else {
+                    console.log('✅ [Supabase] Agendamento atualizado!');
+                }
             } catch (err) {
-                console.error('Erro Supabase (updateAppointment):', err);
+                _showSupabaseError('updateAppointment (catch)', err);
             }
         }
         const local = JSON.parse(localStorage.getItem('appointments')) || [];
@@ -89,14 +148,19 @@ window.dbService = {
     async deleteAppointment(id) {
         if (this.isSupabaseActive()) {
             try {
+                console.log('🔄 [Supabase] Deletando agendamento id:', id);
                 const { error } = await supabaseClient
                     .from('appointments')
                     .delete()
                     .eq('id', id);
 
-                if (error) throw error;
+                if (error) {
+                    _showSupabaseError('deleteAppointment', error);
+                } else {
+                    console.log('✅ [Supabase] Agendamento deletado!');
+                }
             } catch (err) {
-                console.error('Erro Supabase (deleteAppointment):', err);
+                _showSupabaseError('deleteAppointment (catch)', err);
             }
         }
         let local = JSON.parse(localStorage.getItem('appointments')) || [];
@@ -112,10 +176,13 @@ window.dbService = {
                     .from('admins')
                     .select('*');
 
-                if (error) throw error;
-                if (data && data.length > 0) return data;
+                if (error) {
+                    _showSupabaseError('getAdmins', error);
+                } else if (data && data.length > 0) {
+                    return data;
+                }
             } catch (err) {
-                console.error('Erro Supabase (getAdmins):', err);
+                _showSupabaseError('getAdmins (catch)', err);
             }
         }
         const local = localStorage.getItem('admins');
@@ -132,10 +199,13 @@ window.dbService = {
                     .eq('password', password)
                     .maybeSingle();
 
-                if (error) throw error;
-                return !!data;
+                if (error) {
+                    _showSupabaseError('validateAdmin', error);
+                } else {
+                    return !!data;
+                }
             } catch (err) {
-                console.error('Erro Supabase (validateAdmin):', err);
+                _showSupabaseError('validateAdmin (catch)', err);
             }
         }
         const admins = await this.getAdmins();
@@ -150,15 +220,16 @@ window.dbService = {
                     .insert([{ username, password }]);
 
                 if (error) {
-                    if (error.code === '23505') { // unique_violation
+                    if (error.code === '23505') {
                         return { success: false, message: 'Nome de usuário já existe!' };
                     }
-                    throw error;
+                    _showSupabaseError('addAdmin', error);
+                    return { success: false, message: error.message || 'Erro ao salvar no banco' };
                 }
                 return { success: true };
             } catch (err) {
-                console.error('Erro Supabase (addAdmin):', err);
-                return { success: false, message: err.message || 'Erro ao salvar no banco' };
+                _showSupabaseError('addAdmin (catch)', err);
+                return { success: false, message: err.message || 'Erro desconhecido' };
             }
         }
         const admins = await this.getAdmins();
@@ -178,9 +249,9 @@ window.dbService = {
                     .delete()
                     .eq('username', username);
 
-                if (error) throw error;
+                if (error) _showSupabaseError('removeAdmin', error);
             } catch (err) {
-                console.error('Erro Supabase (removeAdmin):', err);
+                _showSupabaseError('removeAdmin (catch)', err);
             }
         }
         let admins = await this.getAdmins();
